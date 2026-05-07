@@ -1,6 +1,6 @@
 # Emotion-Recognition-Multimodal-Fusion-
 
-** Preprocessing — EMOVOME **
+## Preprocessing — EMOVOME 
 
 The EMOVOME dataset provides a large set of pre-extracted vocal/acoustic features for each voice message, together with multiple annotations for valence and arousal provided by different listeners.
 
@@ -48,7 +48,7 @@ The selected features are used to create a reduced and cleaner dataset.
 
 This step helps mitigate the curse of dimensionality, reduces irrelevant variability, and provides a more compact representation for downstream machine learning experiments.
 
-** Preprocessing — AMIGOS **
+## Preprocessing — AMIGOS 
 
 From the AMIGOS dataset, only the ECG and EDA (GSR) physiological signals are used.
 
