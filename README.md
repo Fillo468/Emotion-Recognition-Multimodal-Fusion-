@@ -46,7 +46,7 @@ For each target, the 15 most informative features are selected.
 
 The selected features are used to create a reduced and cleaner dataset.
 
-This step helps mitigate the curse of dimensionality, reduces irrelevant variability, and provides a more compact representation for downstream machine learning experiments.
+This step helps mitigate the curse of dimensionality, reduces irrelevant variability, and provides a more compact representation for consequent machine learning experiments.
 
 ---
 
