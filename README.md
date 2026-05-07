@@ -59,11 +59,11 @@ For each trial, self-assessment annotations are extracted and used as emotional 
 * Arousal
 * Valence
 
-The preprocessing pipeline is structured as follows.
+The preprocessing pipeline is structured as follows:
 
 1. Trial extraction and label association
 
-Each .mat file is parsed to extract:
+Each .mat file is analysed to extract:
 
 trial-level physiological recordings (joined_data)
 corresponding self-assessment labels (labels_selfassessment)
@@ -72,25 +72,27 @@ Only trials containing valid annotations are retained.
 
 For every valid trial, the following target values are associated:
 
-arousal
-valence
+* arousal
+* valence
+
 2. Signal selection
 
 From the original multichannel recording, only the following channels are retained:
 
-ECG → channel 14
-EDA / GSR → channel 16
+* ECG → channel 14
+* EDA / GSR → channel 16
 
 The original AMIGOS recordings are sampled at different effective rates in our pipeline:
 
-ECG: 256 Hz
-EDA: resampled from 256 Hz to 128 Hz
+- ECG: 256 Hz
+- EDA: resampled from 256 Hz to 128 Hz
+
 3. ECG preprocessing
 
 The ECG signal undergoes two filtering stages:
 
-band-pass filter: 0.5 – 40 Hz
-notch filter: 50 Hz
+- band-pass filter: 0.5 – 40 Hz
+- notch filter: 50 Hz
 
 This step removes low-frequency drift, high-frequency noise, and power-line interference.
 
@@ -112,7 +114,6 @@ The quality score combines ECG and EDA information:
 - EDA quality
 * spectral SNR estimate
 * effective dynamic range of the filtered signal
-
 
 The resulting value ranges from 0 (poor quality) to 1 (high quality).
 
@@ -164,7 +165,7 @@ For each valid trial, the extracted physiological features are combined with:
 * arousal
 * signal quality score
 
-The final output is a structured feature table used for downstream machine learning experiments.
+The final output is a structured feature table used for machine learning experiments.
 
 This produces a compact physiological representation of the AMIGOS dataset, ready to be compared and fused with the vocal features extracted from the EMOVOME dataset.
 
