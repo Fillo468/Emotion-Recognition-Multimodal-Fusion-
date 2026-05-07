@@ -1,28 +1,30 @@
 """
 AMIGOS Dataset - ECG & EDA Preprocessing + Feature Extraction
 ==============================================================
-Seleziona la cartella principale del dataset con le sottocartelle dei soggetti.
 
-Struttura attesa:
+Select the main dataset folder containing the subject subfolders.
+
+Expected structure:
     AMIGOS/
         Data_Preprocessed_P01/
             Data_Preprocessed_P01.mat
         Data_Preprocessed_P02/
             ...
 
-Canali in joined_data (17 colonne):
+Channels in joined_data (17 columns):
     0-13 : EEG
     14   : ECG
     15   : ECG2
-    16   : GSR / EDA (valori ADC raw)
+    16   : GSR / EDA (raw ADC values)
 
-Etichette in labels_selfassessment (per trial):
-    colonna 0 : Arousal
-    colonna 1 : Valence
+Labels in labels_selfassessment (per trial):
+    column 0 : Arousal
+    column 1 : Valence
 
-Output -> cartella amigos_output/ nella stessa posizione dello script:
-    - amigos_features.csv   (feature + signal_quality per ogni trial)
-    - plots/                (raw vs filtered, un plot per soggetto)
+Output -> amigos_output/ folder in the same directory as the script:
+    - amigos_features.csv   (features + signal quality for each trial)
+    - plots/
+
 """
 
 import os
@@ -41,7 +43,7 @@ warnings.filterwarnings('ignore')
 from tkinter import Tk, filedialog
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PARAMETRI
+# PARAMETERS
 # ─────────────────────────────────────────────────────────────────────────────
 ECG_FS = 256   # Hz
 EDA_FS = 128   # Hz
@@ -52,7 +54,7 @@ OUTPUT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "amigos_ou
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CARICAMENTO .MAT
+# UPLOAD .MAT
 # ─────────────────────────────────────────────────────────────────────────────
 
 def load_mat(filepath):
@@ -84,7 +86,7 @@ def get_trials_and_labels(mat):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# FILTRI
+# FILTERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def filter_ecg(ecg, fs=ECG_FS):
@@ -93,7 +95,7 @@ def filter_ecg(ecg, fs=ECG_FS):
     2) Bandpass 0.5–40 Hz (Butterworth ordine 4)
     3) Notch 50 Hz per rimozione interferenza rete elettrica
     """
-    # Detrend: rimuove la componente DC e le derive lente
+    # Detrend: remove DC 
     ecg = signal.detrend(ecg, type='linear')
     t   = np.arange(len(ecg))
     poly_coeffs = np.polyfit(t, ecg, 5)
@@ -109,16 +111,15 @@ def filter_ecg(ecg, fs=ECG_FS):
 
 def filter_eda(eda, fs=EDA_FS):
     """
-    1) Normalizzazione ADC -> [0,1]
-    2) Rimozione spike con filtro mediana (finestra 0.5 s)
-    3) Lowpass 5 Hz (Butterworth ordine 4)
+    1) Normalization ADC -> [0,1]
+    2) Remotion spike  (window 0.5 s)
+    3) Lowpass 5 Hz (Butterworth order 4)
     """
-    # Normalizzazione
+    # Normalization
     eda_min, eda_max = eda.min(), eda.max()
     eda_norm = (eda - eda_min) / (eda_max - eda_min) if eda_max > eda_min else eda.copy()
 
-    # Rimozione spike: finestra = 0.5 s -> campioni dispari
-    win = int(fs * 0.5) | 1   # forza numero dispari
+    win = int(fs * 0.5) | 1  
     from scipy.ndimage import median_filter
     eda_despike = median_filter(eda_norm, size=win)
 
@@ -129,11 +130,10 @@ def filter_eda(eda, fs=EDA_FS):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# QUALITY WEIGHT  (0 = segnale pessimo, 1 = segnale ottimo)
+# QUALITY WEIGHT  
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _snr_estimate(sig):
-    """SNR stimato come rapporto potenza segnale / potenza rumore ad alta freq."""
     f, pxx = signal.welch(sig, nperseg=min(256, len(sig)//2))
     if len(f) < 2:
         return 0.0
@@ -146,12 +146,7 @@ def _snr_estimate(sig):
 
 
 def compute_quality(ecg_filt, eda_filt, fs_ecg=ECG_FS, fs_eda=EDA_FS):
-    """
-    Ritorna un unico peso [0-1] per trial:
-      - ecg_quality: SNR stimato * percentuale R-peaks con intervallo RR fisiologico
-      - eda_quality: SNR stimato * range del segnale (segnale flat -> bassa qualità)
-      - signal_quality = media pesata (ECG 60%, EDA 40%)
-    """
+   
     # ── ECG quality ──
     ecg_snr = _snr_estimate(ecg_filt)
     try:
@@ -172,7 +167,7 @@ def compute_quality(ecg_filt, eda_filt, fs_ecg=ECG_FS, fs_eda=EDA_FS):
     eda_range = float(np.clip(np.ptp(eda_filt), 0, 1))   # già in [0,1]
     eda_quality = float(np.clip(eda_snr * (0.5 + 0.5 * eda_range), 0, 1))
 
-    # ── Combinato ──
+    # ── Combined ──
     signal_quality = 0.6 * ecg_quality + 0.4 * eda_quality
     return round(float(signal_quality), 4)
 
@@ -182,12 +177,7 @@ def compute_quality(ecg_filt, eda_filt, fs_ecg=ECG_FS, fs_eda=EDA_FS):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def sample_entropy(sig, m=2, r_factor=0.2):
-    """
-    Sample Entropy: misura la complessità/imprevedibilità del segnale.
-    m       = lunghezza template
-    r_factor= tolleranza come frazione della std
-    Ritorna NaN se il segnale è troppo corto o piatto.
-    """
+   
     N = len(sig)
     if N < 50:
         return np.nan
@@ -204,7 +194,7 @@ def sample_entropy(sig, m=2, r_factor=0.2):
                     count += 1
         return count
 
-    # Versione vettorizzata (più veloce per segnali lunghi)
+    
     def _count_fast(m):
         count = 0
         for i in range(N - m):
@@ -218,7 +208,6 @@ def sample_entropy(sig, m=2, r_factor=0.2):
             count += np.sum(matches)
         return count
 
-    # Approssimazione efficiente con subsample per trial lunghi
     step = max(1, N // 500)
     sub  = sig[::step]
     M    = len(sub)
@@ -238,10 +227,7 @@ def sample_entropy(sig, m=2, r_factor=0.2):
 
 
 def permutation_entropy(sig, order=3, delay=1):
-    """
-    Permutation Entropy: cattura la complessità ordinale del segnale.
-    Normalizzata in [0,1].
-    """
+ 
     N = len(sig)
     if N < order * delay + 1:
         return np.nan
@@ -249,7 +235,6 @@ def permutation_entropy(sig, order=3, delay=1):
     from itertools import permutations
     import math
 
-    # Conta le permutazioni dei pattern di ordine `order`
     perms = {}
     for i in range(N - (order - 1) * delay):
         pattern = tuple(np.argsort(sig[i:i + order * delay:delay]))
@@ -258,7 +243,6 @@ def permutation_entropy(sig, order=3, delay=1):
     total = sum(perms.values())
     probs = [c / total for c in perms.values()]
     pe    = -sum(p * np.log(p) for p in probs if p > 0)
-    # Normalizza per log(order!)
     max_pe = np.log(math.factorial(order))
     return float(pe / max_pe) if max_pe > 0 else np.nan
 
@@ -327,11 +311,10 @@ def eda_features(eda_filt, fs=EDA_FS):
         feats['eda_scr_count']   = int(n_scr)
         feats['eda_scr_rate']    = float(n_scr / dur_min) if dur_min > 0 else np.nan
 
-        # Rise time e amplitude per ogni SCR
+        
         if n_scr > 0 and 'SCR_Onsets' in info and 'SCR_Amplitude' in info:
             onsets    = np.array(info['SCR_Onsets'])
             amplitudes= np.array(info['SCR_Amplitude'])
-            # Rise time = distanza temporale onset -> peak (in secondi)
             min_len = min(len(onsets), len(scr_idx))
             if min_len > 0:
                 rise_times = (scr_idx[:min_len] - onsets[:min_len]) / fs
@@ -343,7 +326,6 @@ def eda_features(eda_filt, fs=EDA_FS):
             feats['eda_scr_amp_mean'] = float(np.mean(amplitudes))
             feats['eda_scr_amp_max']  = float(np.max(amplitudes))
 
-            # Area sotto ogni picco SCR (approssimazione trapezi intorno al peak)
             half_win = int(fs * 1.5)
             areas = []
             for pk in scr_idx:
@@ -357,7 +339,7 @@ def eda_features(eda_filt, fs=EDA_FS):
                 feats[k] = np.nan
 
         # ── Frequency-domain ─────────────────────────────────────────────────
-        # Banda simpatetica EDA: 0.045–0.25 Hz
+
         nperseg = min(512, len(eda_filt) // 2)
         f_pxx, pxx = signal.welch(eda_filt, fs=fs, nperseg=nperseg)
 
@@ -373,14 +355,12 @@ def eda_features(eda_filt, fs=EDA_FS):
         feats['eda_symp_ratio']  = float(symp_power / total_power) \
                                    if (total_power and total_power > 0) else np.nan
 
-        # Picco di frequenza dominante
         if total_mask.any():
             feats['eda_peak_freq'] = float(f_pxx[np.argmax(pxx)])
         else:
             feats['eda_peak_freq'] = np.nan
 
         # ── Nonlinear ─────────────────────────────────────────────────────────
-        # Calcoliamo su tonic (stazionario) e phasic separatamente
         feats['eda_tonic_sampen']  = sample_entropy(tonic)
         feats['eda_phasic_permen'] = permutation_entropy(phasic)
 
@@ -442,7 +422,6 @@ def main():
         print("Nessuna cartella selezionata. Uscita.")
         return
 
-    # Trova tutti i .mat nelle sottocartelle
     mat_files = []
     for dirpath, _, filenames in os.walk(dataset_dir):
         for f in sorted(filenames):
