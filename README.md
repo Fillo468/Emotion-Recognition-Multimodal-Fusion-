@@ -8,6 +8,7 @@ Our preprocessing pipeline for EMOVOME datset is structured as follows:
 1. Feature-label merging
 
 The acoustic feature table is first merged with the corresponding annotation labels in order to obtain a unified sample-level representation.
+We fill missing value with the median of the feature
 
 2. Target scale alignment
 
