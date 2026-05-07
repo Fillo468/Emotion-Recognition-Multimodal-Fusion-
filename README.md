@@ -2,9 +2,9 @@
 
 ## Preprocessing — EMOVOME 
 
-The EMOVOME dataset provides a large set of pre-extracted vocal/acoustic features for each voice message, together with multiple annotations for valence and arousal provided by different listeners.
+The EMOVOME dataset provides a large set of pre-extracted vocal/acoustic features from 999 unique, spontaneous voice messages from spanish speakers from Whatsapp, together with multiple annotations for valence and arousal provided by the speakers themselves and different listeners.
 
-Our preprocessing pipeline for EMOVOME datset is structured as follows:
+Our preprocessing pipeline for EMOVOME dataset is structured as follows:
 
 1. Feature-label merging
 
