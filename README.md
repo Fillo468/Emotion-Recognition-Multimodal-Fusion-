@@ -16,11 +16,11 @@ Since the project compares EMOVOME with AMIGOS dataset, the emotional annotation
 
 The original EMOVOME labels are mapped to the same numerical range used in AMIGOS:
 
--2 → 1
--1 → 3
-0 → 5
-1 → 7
-2 → 9
+*-2 → 1
+*-1 → 3
+*0 → 5
+*1 → 7
+*2 → 9
 
 This normalization preserves the ordinal structure of the labels while aligning the emotional scales across datasets.
 
@@ -36,8 +36,8 @@ EMOVOME contains a high-dimensional acoustic feature space.
 
 To reduce redundancy and retain the most informative descriptors, mutual information is computed independently for:
 
-valence
-arousal
+*valence
+*arousal
 
 For each target, the 15 most informative features are selected.
 
