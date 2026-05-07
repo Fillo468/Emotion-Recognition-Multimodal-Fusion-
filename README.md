@@ -48,6 +48,8 @@ The selected features are used to create a reduced and cleaner dataset.
 
 This step helps mitigate the curse of dimensionality, reduces irrelevant variability, and provides a more compact representation for downstream machine learning experiments.
 
+---
+
 ## Preprocessing — AMIGOS 
 
 From the AMIGOS dataset, only the ECG and EDA (GSR) physiological signals are used.
@@ -165,3 +167,5 @@ For each valid trial, the extracted physiological features are combined with:
 The final output is a structured feature table used for downstream machine learning experiments.
 
 This produces a compact physiological representation of the AMIGOS dataset, ready to be compared and fused with the vocal features extracted from the EMOVOME dataset.
+
+---
