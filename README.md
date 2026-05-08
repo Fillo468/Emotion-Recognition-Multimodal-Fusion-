@@ -251,3 +251,114 @@ Performance is evaluated on both validation and test sets using the following re
 The results indicate that vocal features provide a stronger predictive signal for arousal than for valence in the EMOVOME dataset.
 
 ---
+
+## Regression — AMIGOS (Physiological Features)
+
+After preprocessing and feature extraction, regression experiments are performed on the physiological signals extracted from the AMIGOS dataset.
+
+
+1. Input dataset
+
+The regression stage uses the feature table generated during preprocessing.
+
+The dataset contains:
+
+trial-level physiological descriptors
+associated emotional annotations
+extracted ECG and EDA features
+
+Only physiological descriptors are used as predictive inputs.
+
+2. Modality-specific feature selection
+
+The two physiological modalities are evaluated independently.
+
+ECG feature subset
+
+EDA feature subset
+
+This creates two separate regression pipelines:
+
+* ECG-only
+* EDA-only
+
+3. Targets
+
+Two independent regression tasks are defined:
+
+* Arousal regression
+* Valence regression
+
+The target values correspond to the original AMIGOS self-assessment annotations.
+
+4. Train / validation / test split
+
+For each modality and target, the dataset is divided into:
+
+Training set: 60%
+Validation set: 20%
+Test set: 20%
+
+A fixed random seed (random_state = 42) is used for reproducibility.
+
+5. Feature standardization
+
+Before training, physiological features are standardized using z-score normalization.
+
+The scaler is fitted only on the training set and then applied to validation and test sets.
+
+6. Regression models
+
+A separate Random Forest regressor is trained for each modality-target combination.
+
+- ECG — Arousal
+n_estimators = 200
+max_depth = 5
+min_samples_split = 2
+bootstrap = True
+oob_score = True
+- ECG — Valence
+n_estimators = 500
+max_depth = 5
+min_samples_split = 2
+bootstrap = True
+oob_score = True
+- EDA — Arousal
+n_estimators = 100
+max_depth = 5
+min_samples_split = 2
+bootstrap = True
+oob_score = True
+- EDA — Valence
+n_estimators = 500
+max_depth = 5
+min_samples_split = 2
+bootstrap = True
+oob_score = True
+
+These hyperparameters were selected through preliminary *grid-search* optimization.
+
+7. Model persistence
+
+The trained physiological regressors are saved for later reuse in the late fusion stage:
+
+rf_amigos_ecg_arousal.pkl
+rf_amigos_ecg_valence.pkl
+rf_amigos_eda_arousal.pkl
+rf_amigos_eda_valence.pkl
+
+
+8. Evaluation metrics
+
+Each model is evaluated on both validation and test sets using:
+
+MSE — Mean Squared Error
+RMSE — Root Mean Squared Error
+MAE — Mean Absolute Error
+R² — Coefficient of Determination
+
+9. Test performance
+
+Overall, the physiological single-modality regressors show limited predictive power, especially for valence, which motivates the use of multimodal fusion.
+
+---
