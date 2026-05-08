@@ -11,27 +11,13 @@ Our preprocessing pipeline for EMOVOME dataset is structured as follows:
 The acoustic feature table is first merged with the corresponding annotation labels in order to obtain a unified sample-level representation.
 We fill missing value with the median of the feature
 
-2. Target scale alignment
-
-Since the project compares EMOVOME with AMIGOS dataset, the emotional annotations are rescaled to make the two datasets comparable.
-
-The original EMOVOME labels are mapped to the same numerical range used in AMIGOS:
-
-* -2 → 1
-* -1 → 3
-* 0 → 5
-* 1 → 7
-* 2 → 9
-
-This normalization preserves the ordinal structure of the labels while aligning the emotional scales across datasets.
-
-3. Aggregation of listener annotations
+2. Aggregation of listener annotations
 
 Each sample in EMOVOME contains multiple listener annotations.
 
 For both valence and arousal, the final target value is computed as the mean score across annotators, producing a single continuous target per emotional dimension.
 
-4. Feature selection using mutual information
+3. Feature selection using mutual information
 
 EMOVOME contains a high-dimensional acoustic feature space.
 
@@ -42,7 +28,7 @@ To reduce redundancy and retain the most informative descriptors, mutual informa
 
 For each target, the 15 most informative features are selected.
 
-5. Clean dataset generation
+4. Clean dataset generation
 
 The selected features are used to create a reduced and cleaner dataset.
 
@@ -168,5 +154,100 @@ For each valid trial, the extracted physiological features are combined with:
 The final output is a structured feature table used for machine learning experiments.
 
 This produces a compact physiological representation of the AMIGOS dataset, ready to be compared and fused with the vocal features extracted from the EMOVOME dataset.
+
+---
+
+## Regression — EMOVOME (Vocal Features)
+
+After preprocessing and feature selection, the regression experiments on the EMOVOME dataset are performed using the selected vocal acoustic features.
+
+
+1. Input dataset
+
+The regression stage uses the cleaned EMOVOME dataset obtained after preprocessing.
+
+The dataset contains:
+
+- 999 samples
+- 24 selected vocal features
+
+Non-predictive columns such as sample identifiers and target labels are removed before model training.
+
+2. Target normalization
+
+To make EMOVOME compatible with the physiological targets extracted from the AMIGOS dataset dataset, emotional annotations are rescaled.
+
+The original EMOVOME target values:
+
+{-2, -1, 0, 1, 2}
+
+are mapped to the AMIGOS-compatible range:
+
+{1, 3, 5, 7, 9}
+
+using the transformation:
+
+y = 2x + 5
+
+This alignment allows direct comparison between vocal and physiological regression outputs.
+
+3. Train / validation / test split
+
+The dataset is divided into three disjoint subsets:
+
+* Training set: 60%
+* Validation set: 20%
+* Test set: 20%
+
+A fixed random seed (random_state = 42) is used to ensure reproducibility.
+
+4. Feature standardization
+
+All vocal features are standardized using z-score normalization.
+
+The scaler is fitted only on the training set and then applied to validation and test sets.
+
+This ensures consistent feature scaling across the entire regression pipeline.
+
+5. Regression models
+
+Two independent Random Forest regressors are trained:
+
+- Arousal regressor
+n_estimators = 500
+max_depth = None
+min_samples_split = 5
+bootstrap = True
+
+- Valence regressor
+n_estimators = 100
+max_depth = 10
+min_samples_split = 10
+bootstrap = True
+
+These hyperparameters were selected through preliminary *grid search* optimization.
+
+Separate models are trained for the two emotional dimensions because arousal and valence may exhibit different predictive patterns.
+
+6. Model persistence
+
+The trained vocal regressors are saved as serialized models for later reuse in the late fusion stage:
+
+modello_voce_arousal.pkl
+modello_voce_valence.pkl
+
+7. Evaluation metrics
+
+Performance is evaluated on both validation and test sets using the following regression metrics:
+
+* MSE — Mean Squared Error
+* RMSE — Root Mean Squared Error
+* MAE — Mean Absolute Error
+* R² — Coefficient of Determination
+
+8. Test performance
+
+
+The results indicate that vocal features provide a stronger predictive signal for arousal than for valence in the EMOVOME dataset.
 
 ---
